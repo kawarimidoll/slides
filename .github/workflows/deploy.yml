@@ -29,18 +29,28 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Install dependencies
+      - name: Install dependencies (daikonvim-2025-09-19)
         working-directory: ./daikonvim-2025-09-19
         run: bun install
 
-      - name: Build Slidev
+      - name: Build Slidev (daikonvim-2025-09-19)
         working-directory: ./daikonvim-2025-09-19
         run: bun run build --base /slides/daikonvim-2025-09-19/
+
+      - name: Install dependencies (kagurazaka-2025-10-20)
+        working-directory: ./kagurazaka-2025-10-20
+        run: bun install
+
+      - name: Build Slidev (kagurazaka-2025-10-20)
+        working-directory: ./kagurazaka-2025-10-20
+        run: bun run build --base /slides/kagurazaka-2025-10-20/
 
       - name: Create deployment directory
         run: |
           mkdir -p deployment/daikonvim-2025-09-19
+          mkdir -p deployment/kagurazaka-2025-10-20
           cp -r daikonvim-2025-09-19/dist/* deployment/daikonvim-2025-09-19/
+          cp -r kagurazaka-2025-10-20/dist/* deployment/kagurazaka-2025-10-20/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
