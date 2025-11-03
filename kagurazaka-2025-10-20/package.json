@@ -1,0 +1,19 @@
+{
+  "name": "slidev",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "slidev build",
+    "dev": "slidev --open",
+    "export": "slidev export"
+  },
+  "dependencies": {
+    "@iconify-json/octicon": "^1.2.16",
+    "@iconify-json/simple-icons": "^1.2.54",
+    "@slidev/cli": "^52.1.0",
+    "@slidev/theme-default": "latest",
+    "@slidev/theme-seriph": "latest",
+    "marked": "^16.4.1",
+    "vue": "^3.5.18"
+  }
+}
