@@ -37,12 +37,17 @@ jobs:
         working-directory: ./daikonvim-2025-09-19
         run: bun run build --base /slides/daikonvim-2025-09-19/
 
+      - name: Create deployment directory
+        run: |
+          mkdir -p deployment/daikonvim-2025-09-19
+          cp -r daikonvim-2025-09-19/dist/* deployment/daikonvim-2025-09-19/
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: daikonvim-2025-09-19/dist
+          path: deployment
 
   deploy:
     environment:
