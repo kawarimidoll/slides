@@ -19,3 +19,7 @@ bun run build
 # Export to PDF
 bun run export
 ```
+
+## View Online
+
+https://kawarimidoll.github.io/slides/daikonvim-2025-09-19/
