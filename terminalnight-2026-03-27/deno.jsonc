@@ -1,5 +1,6 @@
 {
   "tasks": {
-    "scattered": "deno run --allow-read=/dev/tty scattered.ts"
+    "scattered": "deno run --allow-read=/dev/tty scattered.ts",
+    "explode": "deno run --allow-read=/dev/tty explode.ts"
   }
 }
