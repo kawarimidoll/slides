@@ -168,81 +168,12 @@ async function main() {
     });
   }
 
-  const locked = new Set<string>();
+  const locked = new Set<string>();   // head passed → show white
+  const revealed = new Set<string>(); // tail passed → start gradient
 
-  // Run until all columns have fully passed through
-  const maxFrames = 120;
-  for (let frame = 0; frame < maxFrames; frame++) {
-    let buf = clearScreen;
+  // Gradient tick starts counting per-character from reveal time
+  let globalTick = 0;
 
-    let allDone = true;
-
-    for (const col of columns) {
-      if (frame < col.startDelay) {
-        allDone = false;
-        continue;
-      }
-
-      col.headRow += col.speed;
-      const head = Math.floor(col.headRow);
-      const tail = head - col.length;
-
-      // Column still active?
-      if (tail < rows) allDone = false;
-
-      // Lock targets when the head reaches them (not the tail)
-      for (const t of targets) {
-        if (t.col === col.col && head >= t.row) {
-          locked.add(`${t.row},${t.col}`);
-        }
-      }
-
-      for (let r = 0; r < rows; r++) {
-        if (r > head || r <= tail) continue;
-        if (r < 0 || r >= rows) continue;
-
-        const key = `${r},${col.col}`;
-
-        // Don't overwrite locked targets with rain chars
-        if (locked.has(key)) continue;
-
-        // Brightness: head is bright, fades toward tail
-        const distFromHead = head - r;
-        const ratio = distFromHead / col.length;
-        const gray = Math.max(234, Math.floor(254 - ratio * 22));
-
-        buf += moveTo(r, col.col) + `${CSI}38;5;${gray}m` + col.chars[r];
-      }
-    }
-
-    // Always draw all locked targets
-    for (const key of locked) {
-      const [r, c] = key.split(",").map(Number);
-      buf += moveTo(r, c) + `${CSI}38;5;255m` + targetMap.get(key)!;
-    }
-
-    write(buf);
-    await new Promise((resolve) => setTimeout(resolve, 25));
-
-    if (allDone) break;
-  }
-
-  // Lock any remaining
-  for (const t of targets) {
-    locked.add(`${t.row},${t.col}`);
-  }
-
-  // Brief pause with just target text
-  {
-    let buf = clearScreen;
-    for (const t of targets) {
-      buf += moveTo(t.row, t.col) + `${CSI}38;5;255m` + t.char;
-    }
-    write(buf);
-    await new Promise((r) => setTimeout(r, 300));
-  }
-
-  // ── Phase 3: Vertical gradient scroll loop until keypress ──
   let keyPressed = false;
   const keyBuf = new Uint8Array(16);
   const pollKey = async () => {
@@ -251,21 +182,80 @@ async function main() {
       if (n !== null) keyPressed = true;
     } catch { /* */ }
   };
-  pollKey();
 
-  let tick = 0;
+  // Combined rain + gradient loop
+  let allDone = false;
+
   while (!keyPressed) {
     let buf = clearScreen;
 
+    if (!allDone) {
+      allDone = true;
+
+      for (const col of columns) {
+        if (globalTick < col.startDelay) {
+          allDone = false;
+          continue;
+        }
+
+        col.headRow += col.speed;
+        const head = Math.floor(col.headRow);
+        const tail = head - col.length;
+
+        if (tail < rows) allDone = false;
+
+        // Lock targets when head reaches them
+        // Reveal targets when tail passes them
+        for (const t of targets) {
+          if (t.col !== col.col) continue;
+          const key = `${t.row},${t.col}`;
+          if (head >= t.row) locked.add(key);
+          if (tail >= t.row) revealed.add(key);
+        }
+
+        // Draw rain streak
+        for (let r = 0; r < rows; r++) {
+          if (r > head || r <= tail) continue;
+
+          const key = `${r},${col.col}`;
+          if (locked.has(key)) continue;
+
+          const distFromHead = head - r;
+          const ratio = distFromHead / col.length;
+          const gray = Math.max(234, Math.floor(254 - ratio * 22));
+
+          buf += moveTo(r, col.col) + `${CSI}38;5;${gray}m` + col.chars[r];
+        }
+      }
+
+      // If all done, lock/reveal any remaining
+      if (allDone) {
+        for (const t of targets) {
+          const key = `${t.row},${t.col}`;
+          locked.add(key);
+          revealed.add(key);
+        }
+      }
+    }
+
+    // Draw target characters: gradient if revealed, white if just locked
     for (const t of targets) {
-      const hue = ((t.row * 30) + tick * 4) % 360;
-      const [cr, cg, cb] = hslToRgb(hue, 0.7, 0.65);
-      buf += moveTo(t.row, t.col) + rgb(cr, cg, cb) + t.char;
+      const key = `${t.row},${t.col}`;
+      if (revealed.has(key)) {
+        const hue = ((t.row * 30) + globalTick * 4) % 360;
+        const [cr, cg, cb] = hslToRgb(hue, 0.7, 0.65);
+        buf += moveTo(t.row, t.col) + rgb(cr, cg, cb) + t.char;
+      } else if (locked.has(key)) {
+        buf += moveTo(t.row, t.col) + `${CSI}38;5;255m` + t.char;
+      }
     }
 
     write(buf);
-    tick++;
-    await new Promise((r) => setTimeout(r, 50));
+    globalTick++;
+
+    // Rain phase: faster tick, gradient-only phase: slower tick
+    const delay = allDone ? 50 : 25;
+    await new Promise((resolve) => setTimeout(resolve, delay));
 
     if (!keyPressed) pollKey();
   }
