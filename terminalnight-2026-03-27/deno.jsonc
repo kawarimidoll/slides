@@ -2,6 +2,7 @@
   "tasks": {
     "scattered": "deno run --allow-read=/dev/tty scattered.ts",
     "explode": "deno run --allow-read=/dev/tty explode.ts",
-    "vortex": "deno run --allow-read=/dev/tty vortex.ts"
+    "vortex": "deno run --allow-read=/dev/tty vortex.ts",
+    "rain": "deno run --allow-read=/dev/tty rain.ts"
   }
 }
